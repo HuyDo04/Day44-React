@@ -25,7 +25,7 @@ function Navigation() {
             <NavLink to="/register2">Register2</NavLink>
           </li>
           <li>
-            <NavLink to="/profile">Profile</NavLink>
+            <NavLink to="/user">User</NavLink>
           </li>
         </ul>
       </nav>
