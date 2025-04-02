@@ -75,10 +75,40 @@ export const checkEmail = async (email) => {
     }
 }
 
+export const checkEmailUpdate = async (email, id) => {
+    try {
+        const res = await httpRequest.get(`/auth/check-email?email=${email}&exclude_id=${id}`)
+        return res.exists
+    } catch (error) {
+        return false
+    }
+}
+
+export const checkPhone = async (phone) => {
+    try {
+        const res = await httpRequest.get(`/auth/check-phone?phone=${phone}`)
+        return res.exists
+    } catch (error) {
+        return false
+    }
+}
+
+export const CheckUsername = async (username) => {
+    try {
+        const res = await httpRequest.get(`/auth/check-phone?phone=${username}`)
+        return res.exists
+    } catch (error) {
+        return false
+    }
+}
+
 export default {
     getCurrentUser,
     register,
     login,
     logout,
-    checkEmail
+    checkEmail,
+    checkPhone,
+    CheckUsername,
+    checkEmailUpdate
 }

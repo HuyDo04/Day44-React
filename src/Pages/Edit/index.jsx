@@ -1,60 +1,108 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
 import userService from "@/service/userService";
 import { useParams, useNavigate } from "react-router-dom";
-
-const schema = yup.object({
-  firstName: yup.string().required("Họ không được để trống"),
-  lastName: yup.string().required("Tên không được để trống"),
-  email: yup
-    .string()
-    .email("Email không hợp lệ")
-    .required("Email không được để trống"),
-  gender: yup.string(),
-  phone: yup.string(),
-  birthDate: yup.date("Nhập ngày tháng năm hợp lệ"),
-});
+import authService from "@/service/authService";
+import useUser from "@/hooks/useUser";
+import InputText from "@/component/InputText";
+import updateSchema from "@/schema/updateSchema";
+let timer;
 
 function EditProfile() {
   const { username } = useParams();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const navigate = useNavigate();
+  const user = useUser();
+  const userId = user.id;
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
+    trigger,
     formState: { errors },
   } = useForm({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(updateSchema),
   });
 
+  // check email
+  const emailValue = watch("email");
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        const res = await userService.getOne(username);
-        console.log(res);
-        setValue("firstName", res.firstName);
-        setValue("lastName", res.lastName);
-        setValue("email", res.email);
-        setValue("gender", res.gender);
-        setValue("phone", res.phone);
-        setValue("birthDate", res.birthDate);
-      } catch (err) {
-        setError("Không thể tải thông tin người dùng");
-        console.error(err);
-      } finally {
-        setLoading(false);
+    if (!emailValue) return;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const isValid = await trigger("email");
+
+      if (isValid) {
+        const emailCheck = await authService.checkEmailUpdate(
+          emailValue,
+          userId
+        );
+        if (emailCheck) {
+          setError("email", {
+            type: "manual",
+            message: "Email này đã được sử dụng",
+          });
+        }
       }
-    };
+    }, 400);
+  }, [emailValue, trigger, setError]);
 
-    fetchUserData();
-  }, [username, setValue]);
+  //  check phone
+  const phoneValue = watch("phone");
+  useEffect(() => {
+    if (!phoneValue) return;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const isValid = await trigger("phone");
+      if (isValid) {
+        const phoneCheck = await authService.checkPhone(phoneValue);
+        if (phoneCheck) {
+          setError("phone", {
+            type: "manual",
+            message: "Phone này đã được sử dụng",
+          });
+        }
+      }
+    }, 400);
+  }, [phoneValue, trigger, setError]);
 
+  // check username
+  const usernameValue = watch("username");
+  useEffect(() => {
+    if (!usernameValue) return;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const isValid = await trigger("username");
+      if (isValid) {
+        const usernameCheck = await authService.CheckUsername(usernameValue);
+        if (usernameCheck) {
+          setError("username", {
+            type: "manual",
+            message: "Username này đã được sử dụng",
+          });
+        }
+      }
+    }, 400);
+  }, [usernameValue, trigger, setError]);
+
+  // setValue form
+  useEffect(() => {
+    if (user) {
+      setValue("firstName", user.firstName || "");
+      setValue("lastName", user.lastName || "");
+      setValue("email", user.email || "");
+      setValue("gender", user.gender || "");
+      setValue("phone", user.phone || "");
+      setValue("birthDate", user.birthDate || "");
+      setValue("username", user.username || "");
+      setLoading(false);
+    }
+  }, [user, setValue]);
+
+  // submit
   const onSubmit = async (data) => {
     try {
       setLoading(true);
@@ -62,8 +110,16 @@ function EditProfile() {
       alert("Cập nhật thành công!");
       navigate(`/p/${username}`);
     } catch (error) {
-      console.log("Lỗi cập nhật:", error);
-      alert("Cập nhật thất bại!");
+      console.log("Lỗi cập nhật:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      alert(
+        `Cập nhật thất bại! ${JSON.stringify(
+          error.response?.data || error.message
+        )}`
+      );
     } finally {
       setLoading(false);
     }
@@ -74,32 +130,55 @@ function EditProfile() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <label>Họ:</label>
-      <input type="text" {...register("firstName")} />
-      <p>{errors.firstName?.message}</p>
+      <span>Họ:</span>
+      <InputText
+        name="firstName"
+        register={register}
+        message={errors.firstName?.message}
+      ></InputText>
 
-      <label>Tên:</label>
-      <input type="text" {...register("lastName")} />
-      <p>{errors.lastName?.message}</p>
+      <span>Tên:</span>
+      <InputText
+        name="lastName"
+        register={register}
+        message={errors.lastName?.message}
+      ></InputText>
 
-      <label>Email:</label>
-      <input type="email" {...register("email")} />
-      <p>{errors.email?.message}</p>
+      <span>Username:</span>
+      <InputText
+        name="username"
+        register={register}
+        message={errors.username?.message}
+      ></InputText>
 
-      <label>Giới tính:</label>
+      <span>Email:</span>
+      <InputText
+        name="email"
+        register={register}
+        message={errors.email?.message}
+      ></InputText>
+
+      <span>Giới tính:</span>
       <select {...register("gender")}>
         <option value="">Chưa cập nhật</option>
         <option value="male">Nam</option>
         <option value="female">Nữ</option>
       </select>
 
-      <label>Số điện thoại:</label>
-      <input type="text" {...register("phone")} />
-      <p>{errors.phone?.message}</p>
+      <span>Số điện thoại:</span>
+      <InputText
+        name="phone"
+        register={register}
+        message={errors.phone?.message}
+      ></InputText>
 
-      <label>Ngày sinh:</label>
-      <input type="date" {...register("birthDate")} />
-      <p>{errors.birthDate?.message}</p>
+      <span>Ngày sinh:</span>
+      <InputText
+        type="date"
+        name="birthDate"
+        register={register}
+        message={errors.birthDate?.message}
+      ></InputText>
 
       <button type="submit">{loading ? "Đang lưu..." : "Lưu thay đổi"}</button>
     </form>

@@ -7,6 +7,7 @@ const httpRequest = axios.create({
     }
 })
 
+
 const send = async (method, url, data, config) => {
     const response = await httpRequest.request({
         method,

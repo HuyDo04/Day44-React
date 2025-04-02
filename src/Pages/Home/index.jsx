@@ -1,37 +1,44 @@
-import Button from "@/component/Button";
-import config from "@/config";
+import useDebounce from "@/hooks/useDebounce";
+import useUser from "@/hooks/useUser";
+import { useEffect, useState } from "react";
 
-import styles from "./Home.module.scss";
-import { faChevronCircleRight } from "@fortawesome/free-solid-svg-icons";
 function Home() {
+  const [searchValue, setSearchValue] = useState("");
+  const [preview, setPreview] = useState(null);
+  const [avatar, setAvatar] = useState(null);
+  const debounceValue = useDebounce(searchValue, 800);
+
+  const user = useUser();
+  console.log(user);
+  useEffect(() => {
+    if (debounceValue) {
+      console.log(`Call API ${debounceValue}`);
+    }
+  }, [debounceValue]);
+
+  useEffect(() => {
+    return () => {
+      URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
   return (
     <div>
-      <h1>Home page</h1>
-      <Button
-        size="medium"
-        icon={faChevronCircleRight}
-        href={config.routes.users}
-      >
-        Click me 1!
-      </Button>
-      <Button
-        size="small"
-        icon={faChevronCircleRight}
-        primary
-        rounded
-        // disabled
-        loading
-        className={styles.btnHome}
-        onClick={() => alert("Hello")}
-      >
-        Click me 2!
-      </Button>
-      <Button size="large" icon={faChevronCircleRight} secondary>
-        Click me 3!
-      </Button>
-      <Button size="large" icon={faChevronCircleRight} rounded>
-        Click me 4!
-      </Button>
+      <input
+        type="text"
+        value={searchValue}
+        onChange={(e) => setSearchValue(e.target.value)}
+        placeholder="Search"
+      />
+      <input
+        type="file"
+        onChange={(e) => {
+          setAvatar(e.target.files[0]);
+          setPreview(URL.createObjectURL(e.target.files[0]));
+        }}
+      />
+      {preview && <img src={preview} width={200} />}
+      {user && <p>Xin chào {user.firstName}</p>}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import Button from "@/component/Button";
+import useUser from "@/hooks/useUser";
 import authService from "@/service/authService";
 import userService from "@/service/userService";
 import { useEffect, useState } from "react";
@@ -7,8 +8,8 @@ import { useNavigate, useParams } from "react-router-dom";
 function Profile() {
   const name = useParams();
   const [profile, setProfile] = useState({});
-  const [currentUser, setCurrentUser] = useState({});
   const navigate = useNavigate();
+  const user = useUser();
   useEffect(() => {
     async function handle() {
       const res = await userService.getOne(name.username);
@@ -16,14 +17,6 @@ function Profile() {
     }
     handle();
   }, [name.username]);
-
-  useEffect(() => {
-    async function handle() {
-      const response = await authService.getCurrentUser();
-      setCurrentUser(response.user);
-    }
-    handle();
-  }, []);
 
   return (
     <>
@@ -37,12 +30,12 @@ function Profile() {
       <p>Số điện thoại: {profile.phone || "Chưa cập nhật"}</p>
       <p>Ngày sinh: {profile.birthDate || "Chưa cập nhật"}</p>
       <p>
-        Trạng thái:{" "}
+        Trạng thái:
         {profile.emailVerifiedAt
           ? "Tài khoản đã được xác minh"
           : "Tài khoản chưa xác minh"}
       </p>
-      {profile.username === currentUser.username ? (
+      {profile.username === user.username ? (
         <button onClick={() => navigate(`/profile/${profile.username}/edit`)}>
           Edit
         </button>

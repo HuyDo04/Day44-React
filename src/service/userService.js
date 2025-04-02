@@ -15,7 +15,7 @@ export const getOne = async (username) => {
 };
 
 export const update = async (username, data) => {
-    const response = await httpRequest.patch(`/user/${username}`, data);
+    const response = await httpRequest.patch(`/users/${username}`, data);
     return response
 }
 
