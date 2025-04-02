@@ -6,17 +6,38 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 function Profile() {
-  const name = useParams();
+  const { username } = useParams();
   const [profile, setProfile] = useState({});
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
-  const user = useUser();
+
+  // Fetch thông tin profile của user
   useEffect(() => {
     async function handle() {
-      const res = await userService.getOne(name.username);
-      setProfile(res);
+      try {
+        const res = await userService.getOne(username);
+        setProfile(res);
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin profile:", error);
+      }
     }
     handle();
-  }, [name.username]);
+  }, [username]);
+
+  // Fetch thông tin user hiện tại
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const data = await authService.getCurrentUser();
+        setCurrentUser(data.user);
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin user hiện tại:", error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  if (!currentUser) return <p>Đang tải thông tin người dùng...</p>;
 
   return (
     <>
@@ -35,12 +56,10 @@ function Profile() {
           ? "Tài khoản đã được xác minh"
           : "Tài khoản chưa xác minh"}
       </p>
-      {profile.username === user.username ? (
+      {profile.username === currentUser.username && (
         <button onClick={() => navigate(`/profile/${profile.username}/edit`)}>
-          Edit
+          Chỉnh sửa
         </button>
-      ) : (
-        ""
       )}
     </>
   );

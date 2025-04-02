@@ -9,13 +9,13 @@ import InputText from "@/component/InputText";
 import updateSchema from "@/schema/updateSchema";
 let timer;
 
-function EditProfile() {
+function Edit() {
   const { username } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
-  const user = useUser();
-  const userId = user.id;
+  const [isUserLoaded, setIsUserLoaded] = useState(false);
   const {
     register,
     handleSubmit,
@@ -27,10 +27,33 @@ function EditProfile() {
     resolver: yupResolver(updateSchema),
   });
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const data = await authService.getCurrentUser();
+      setCurrentUser(data.user);
+    };
+    fetchUser();
+  }, []);
+
+  // setValue form
+  useEffect(() => {
+    if (currentUser) {
+      setValue("firstName", currentUser.firstName || "");
+      setValue("lastName", currentUser.lastName || "");
+      setValue("email", currentUser.email || "");
+      setValue("gender", currentUser.gender || "");
+      setValue("phone", currentUser.phone || "");
+      setValue("birthDate", currentUser.birthDate || "");
+      setValue("username", currentUser.username || "");
+      setIsUserLoaded(true);
+      setLoading(false);
+    }
+  }, [currentUser, setValue]);
+
   // check email
   const emailValue = watch("email");
   useEffect(() => {
-    if (!emailValue) return;
+    if (!emailValue || !isUserLoaded) return;
     clearTimeout(timer);
     timer = setTimeout(async () => {
       const isValid = await trigger("email");
@@ -38,9 +61,10 @@ function EditProfile() {
       if (isValid) {
         const emailCheck = await authService.checkEmailUpdate(
           emailValue,
-          userId
+          currentUser.id
         );
         if (emailCheck) {
+          console.log(emailCheck);
           setError("email", {
             type: "manual",
             message: "Email này đã được sử dụng",
@@ -48,7 +72,7 @@ function EditProfile() {
         }
       }
     }, 400);
-  }, [emailValue, trigger, setError]);
+  }, [emailValue, trigger, setError, isUserLoaded]);
 
   //  check phone
   const phoneValue = watch("phone");
@@ -58,7 +82,10 @@ function EditProfile() {
     timer = setTimeout(async () => {
       const isValid = await trigger("phone");
       if (isValid) {
-        const phoneCheck = await authService.checkPhone(phoneValue);
+        const phoneCheck = await authService.checkPhone(
+          phoneValue,
+          currentUser.id
+        );
         if (phoneCheck) {
           setError("phone", {
             type: "manual",
@@ -72,12 +99,15 @@ function EditProfile() {
   // check username
   const usernameValue = watch("username");
   useEffect(() => {
-    if (!usernameValue) return;
+    if (!usernameValue || !isUserLoaded) return;
     clearTimeout(timer);
     timer = setTimeout(async () => {
       const isValid = await trigger("username");
       if (isValid) {
-        const usernameCheck = await authService.CheckUsername(usernameValue);
+        const usernameCheck = await authService.CheckUsername(
+          usernameValue,
+          currentUser.id
+        );
         if (usernameCheck) {
           setError("username", {
             type: "manual",
@@ -88,27 +118,25 @@ function EditProfile() {
     }, 400);
   }, [usernameValue, trigger, setError]);
 
-  // setValue form
-  useEffect(() => {
-    if (user) {
-      setValue("firstName", user.firstName || "");
-      setValue("lastName", user.lastName || "");
-      setValue("email", user.email || "");
-      setValue("gender", user.gender || "");
-      setValue("phone", user.phone || "");
-      setValue("birthDate", user.birthDate || "");
-      setValue("username", user.username || "");
-      setLoading(false);
-    }
-  }, [user, setValue]);
-
   // submit
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      await userService.update(username, data);
+      const formattedData = Object.fromEntries(
+        Object.entries(data).filter(
+          ([_, value]) => value !== null && value !== undefined && value !== ""
+        )
+      );
+
+      if (formattedData.birthDate) {
+        formattedData.birthDate = new Date(formattedData.birthDate)
+          .toISOString()
+          .split("T")[0];
+      }
+
+      await userService.update(username, formattedData);
       alert("Cập nhật thành công!");
-      navigate(`/p/${username}`);
+      navigate(`/profile/${username}`);
     } catch (error) {
       console.log("Lỗi cập nhật:", {
         message: error.message,
@@ -125,7 +153,7 @@ function EditProfile() {
     }
   };
 
-  if (loading) return <p>Đang tải...</p>;
+  if (!isUserLoaded) return <p>Đang tải dữ liệu...</p>;
   if (error) return <p>{error}</p>;
 
   return (
@@ -180,9 +208,16 @@ function EditProfile() {
         message={errors.birthDate?.message}
       ></InputText>
 
+      <span>Trạng thái:</span>
+      <InputText
+        name="emailVerifiedAt"
+        register={register}
+        message={errors.emailVerifiedAt?.message}
+      ></InputText>
+
       <button type="submit">{loading ? "Đang lưu..." : "Lưu thay đổi"}</button>
     </form>
   );
 }
 
-export default EditProfile;
+export default Edit;

@@ -86,7 +86,7 @@ export const checkEmailUpdate = async (email, id) => {
 
 export const checkPhone = async (phone) => {
     try {
-        const res = await httpRequest.get(`/auth/check-phone?phone=${phone}`)
+        const res = await httpRequest.get(`/auth/check-phone?phone=${phone}&exclude_id=${id}`)
         return res.exists
     } catch (error) {
         return false
@@ -95,7 +95,7 @@ export const checkPhone = async (phone) => {
 
 export const CheckUsername = async (username) => {
     try {
-        const res = await httpRequest.get(`/auth/check-phone?phone=${username}`)
+        const res = await httpRequest.get(`/auth/check-phone?phone=${username}&exclude_id=${id}`)
         return res.exists
     } catch (error) {
         return false

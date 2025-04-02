@@ -12,6 +12,11 @@ const updateSchema = yup
       phone: yup.string().required("Họ không được để trống"),
       birthDate: yup.date().required("Họ không được để trống"),
       username: yup.string().required("Username không được để trống"),
+      username: yup.string().required("Username không được để trống"),
+        emailVerifiedAt: yup
+    .mixed()
+    .transform((value) => (value ? "Tài khoản đã được xác minh" : "Tài khoản chưa xác minh")),
+
     });
 
 export default updateSchema
